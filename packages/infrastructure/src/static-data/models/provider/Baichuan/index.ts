@@ -70,6 +70,32 @@ const models: ProviderConfigType = {
     },
     {
       type: ModelTypeEnum.llm,
+      model: 'Baichuan-M2',
+      maxContext: 32000,
+      maxTokens: 4000,
+      quoteMaxToken: 30000,
+      maxTemperature: 1.2,
+      responseFormatList: ['text', 'json_object'],
+      vision: false,
+      reasoning: false,
+      reasoningEffort: false,
+      toolChoice: true
+    },
+    {
+      type: ModelTypeEnum.llm,
+      model: 'Baichuan-M2-Plus',
+      maxContext: 32000,
+      maxTokens: 4000,
+      quoteMaxToken: 30000,
+      maxTemperature: 1.2,
+      responseFormatList: ['text', 'json_object'],
+      vision: false,
+      reasoning: false,
+      reasoningEffort: false,
+      toolChoice: true
+    },
+    {
+      type: ModelTypeEnum.llm,
       model: 'Baichuan-M3',
       maxContext: 128000,
       maxTokens: 5000,
