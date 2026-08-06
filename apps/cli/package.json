@@ -1,0 +1,58 @@
+{
+  "name": "@fastgpt-plugin/cli",
+  "version": "0.2.2-alpha.1",
+  "description": "CLI for creating, debugging, building, checking, and packaging FastGPT Plugin tools.",
+  "keywords": [
+    "fastgpt",
+    "fastgpt-plugin",
+    "plugin",
+    "cli",
+    "developer-tools"
+  ],
+  "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "@fastgpt-plugin/cli": "index.js",
+    "fastgpt-plugin": "index.js"
+  },
+  "files": [
+    "dist",
+    "index.js",
+    "templates",
+    "skills"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "build:verbose": "tsdown",
+    "test": "vitest run",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.2.0",
+    "@oxc-parser/binding-wasm32-wasi": "^0.112.0",
+    "commander": "^14.0.3",
+    "consola": "^3.4.2",
+    "es-toolkit": "^1.44.0",
+    "ink": "^7.1.0",
+    "oxc-parser": "^0.112.0",
+    "react": "^19.2.7",
+    "tsdown": "catalog:",
+    "yaml": "^2.6.1",
+    "yazl": "^3.3.1",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/yazl": "^3.3.0",
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^6.0.5",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

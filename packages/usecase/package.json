@@ -1,0 +1,22 @@
+{
+  "name": "@fastgpt-plugin/usecase",
+  "type": "module",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "es-toolkit": "^1.44.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@fastgpt-plugin/domain": "workspace:*",
+    "@fastgpt-plugin/shared": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

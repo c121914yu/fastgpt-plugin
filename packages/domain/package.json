@@ -1,0 +1,22 @@
+{
+  "name": "@fastgpt-plugin/domain",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "exports": {
+    "./*": {
+      "import": "./src/*.ts"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@fastgpt-plugin/infrastructure",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "dependencies": {
+    "@fastgpt-sdk/otel": "^0.2.0",
+    "@fastgpt-sdk/storage": "catalog:",
+    "@scalar/hono-api-reference": "^0.9.40",
+    "@t3-oss/env-core": "^0.13.10",
+    "@zip.js/zip.js": "^2.8.26",
+    "es-toolkit": "^1.44.0",
+    "hono": "^4.12.25",
+    "ioredis": "^5.9.2",
+    "json5": "^2.2.3",
+    "mongoose": "8",
+    "undici": "^7.28.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@fastgpt-plugin/domain": "workspace:*",
+    "@fastgpt-plugin/interface-adapter": "workspace:*",
+    "@fastgpt-plugin/usecase": "workspace:*",
+    "date-fns": "^4.1.0",
+    "typescript": "catalog:"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  }
+}

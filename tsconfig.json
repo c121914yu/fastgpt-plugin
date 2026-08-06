@@ -1,17 +1,17 @@
 {
   "compilerOptions": {
-    "types": ["bun"],
+    "types": ["node"],
     // Enable latest features
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
     "module": "ESNext",
     "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "allowJs": true,
 
     // Bundler mode
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
@@ -26,25 +26,33 @@
     "noPropertyAccessFromIndexSignature": false,
 
     // Performance optimizations
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["lib/*"],
-      "@tool/*": ["modules/tool/*"],
-      "@model/*": ["modules/model/*"],
-      "@workflow/*": ["modules/workflow/*"]
-    },
+    "baseUrl": ".",
 
+    "paths": {
+      "@fastgpt-plugin/sdk-factory": ["sdk/factory/src/index.ts"],
+      "@fastgpt-plugin/sdk-factory/*": ["sdk/factory/src/*"],
+      "@fastgpt-plugin/sdk-client": ["sdk/client/src/index.ts"],
+      "@fastgpt-plugin/sdk-client/*": ["sdk/client/src/*"],
+      "@domain/*": ["packages/domain/src/*"],
+      "@usecase/*": ["packages/usecase/src/*"],
+      "@shared/*": ["packages/shared/src/*"],
+      "@interface-adapter/*": ["packages/interface-adapter/src/*"],
+      "@infrastructure/*": ["packages/infrastructure/src/*"],
+      "@fastgpt-plugin/cli/*": ["apps/cli/src/*"],
+    },
     // Performance optimizations
     "incremental": true,
-    "assumeChangesOnlyAffectDirectDependencies": true
+    "assumeChangesOnlyAffectDirectDependencies": true,
   },
   "include": [
-    "modules/**/*.ts",
-    "scripts/**/*.ts",
+    "packages/**/*.ts",
+    "apps/**/*.ts",
     "sdk/**/*.ts",
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "lib/**/*.ts"
+    "tests/**/*.ts",
+    "packages/**/*.d.ts",
   ],
-  "exclude": ["sdk/dist/**/*.ts"]
+  "exclude": [
+    "packages/infrastructure/src/static-data/dataset-source/**/*.ts", // TODO: dataset-source 暂时隐藏
+    "apps/cli/templates/**/*.ts", // 忽略 CLI 模板文件
+  ],
 }

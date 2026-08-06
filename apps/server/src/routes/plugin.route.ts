@@ -1,0 +1,475 @@
+import { Readable } from 'node:stream';
+import type { ReadableStream } from 'node:stream/web';
+
+import { PluginContract } from '@interface-adapter/contracts/route/plugin.contract';
+import type { Context } from 'hono';
+
+import type { LocalFileStoragePort } from '@domain/ports/file-storage/local-file-storage.port';
+import type { PluginPKGFilePort } from '@domain/ports/plugin/plugin-pkg-file.port';
+import type { PluginRepoPort } from '@domain/ports/plugin/plugin-repo.port';
+import type { PluginRuntimeManagerPort } from '@domain/ports/plugin/plugin-runtime-manager.port';
+import type { URLFileFetcherPort } from '@domain/ports/url-file-fetcher.port';
+import { makePluginConfigGetUC } from '@usecase/plugin/plugin-config-get.uc';
+import { makeResetPluginConfigUC } from '@usecase/plugin/plugin-config-reset.uc';
+import { makeSetPluginConfigUC } from '@usecase/plugin/plugin-config-set.uc';
+import { makePluginConfirmUC } from '@usecase/plugin/plugin-confirm.uc';
+import { makePluginDeleteUC } from '@usecase/plugin/plugin-delete.uc';
+import { makePluginInstallUC } from '@usecase/plugin/plugin-install.uc';
+import { makePluginListUC } from '@usecase/plugin/plugin-list.uc';
+import { makePluginPruneDisabledUC } from '@usecase/plugin/plugin-prune-disabled.uc';
+import { makePluginTagListUC } from '@usecase/plugin/plugin-tag-list.uc';
+import { makePluginUploadUC } from '@usecase/plugin/plugin-upload.uc';
+import { makePluginVersionsUC } from '@usecase/plugin/plugin-versions.uc';
+import { createRoute } from '@infrastructure/hono/utils/response';
+import { createOpenAPIHono, R } from '@infrastructure/hono/utils/response';
+import { getLogger, mod } from '@infrastructure/logger';
+
+export type PluginRouteDeps = {
+  localFileStorageRepo: LocalFileStoragePort;
+  urlFileFetcher: URLFileFetcherPort;
+  pluginPKGFileResolver: PluginPKGFilePort;
+  pluginRepo: PluginRepoPort;
+  pluginRuntimeManager: PluginRuntimeManagerPort;
+};
+
+export const makePluginRoute = (deps: PluginRouteDeps) => {
+  const route = createOpenAPIHono();
+  const logger = getLogger(mod.plugin);
+  const usecaseDeps = { ...deps, logger };
+
+  const handleUpload = async (c: Context) => {
+    const pluginUploadUC = makePluginUploadUC(usecaseDeps);
+    const formData = await c.req.formData();
+    const files = formData.getAll('files');
+
+    if (!files.length) {
+      return R.fail(c, 400, {
+        en: 'file is required',
+        'zh-CN': '没有上传文件'
+      });
+    }
+
+    const invalidFile = files.find((file) => !(file instanceof File));
+    if (invalidFile) {
+      return R.fail(c, 400, {
+        en: 'file must be a File instance',
+        'zh-CN': '上传的文件必须是一个 File 实例'
+      });
+    }
+
+    const [result, err] = await pluginUploadUC({
+      files: files.map((file) => ({
+        file: Readable.fromWeb((file as File).stream() as ReadableStream),
+        fileName: (file as File).name
+      }))
+    });
+
+    if (err) {
+      return R.fail(c, 400, err.error);
+    }
+
+    return R.success(c, result);
+  };
+
+  route.openapi(createRoute(PluginContract.Upload.openapi), handleUpload);
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.Confirm.meta,
+      request: {
+        body: {
+          content: {
+            'application/json': {
+              schema: PluginContract.Confirm.request
+            }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response'
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.Confirm.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginConfirmUC = makePluginConfirmUC(usecaseDeps);
+      const { uniqueIds } = c.req.valid('json');
+      const [, err] = await pluginConfirmUC({ uniqueIds });
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return c.json({ ok: true }, 200);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.PruneDisabled.meta,
+      responses: {
+        200: {
+          description: 'HTTP 200 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.PruneDisabled.response[200]
+            }
+          }
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.PruneDisabled.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginPruneDisabledUC = makePluginPruneDisabledUC(usecaseDeps);
+      const [result, err] = await pluginPruneDisabledUC();
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.success(c, result);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.Delete.meta,
+      request: {
+        body: {
+          content: {
+            'application/json': {
+              schema: PluginContract.Delete.request
+            }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response'
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.Delete.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginDeleteUC = makePluginDeleteUC(usecaseDeps);
+      const body = c.req.valid('json');
+      const [, err] = await pluginDeleteUC(body);
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.empty(c);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.Install.meta,
+      request: {
+        body: {
+          content: {
+            'application/json': {
+              schema: PluginContract.Install.request
+            }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.Install.response[200]
+            }
+          }
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.Install.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginInstallUC = makePluginInstallUC(usecaseDeps);
+      const body = c.req.valid('json');
+      const [result, err] = await pluginInstallUC({
+        urls: body.urls,
+        batchDownloadSize: 5
+      });
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.success(c, result);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.List.meta,
+      request: {
+        query: PluginContract.List.request
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.List.response[200]
+            }
+          }
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.List.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginListUC = makePluginListUC(usecaseDeps);
+      const query = c.req.valid('query');
+      const [result, err] = await pluginListUC(query);
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.success(c, result);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.Versions.meta,
+      request: {
+        query: PluginContract.Versions.request
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.Versions.response[200]
+            }
+          }
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.Versions.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginVersionsUC = makePluginVersionsUC(usecaseDeps);
+      const query = c.req.valid('query');
+      const [result, err] = await pluginVersionsUC(query);
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.success(c, result);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.TagList.meta,
+      responses: {
+        200: {
+          description: 'HTTP 200 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.TagList.response[200]
+            }
+          }
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.TagList.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginTagListUC = makePluginTagListUC(usecaseDeps);
+      const [result, err] = await pluginTagListUC({});
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.success(c, result);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.RuntimeConfigGet.meta,
+      request: {
+        body: {
+          content: {
+            'application/json': {
+              schema: PluginContract.RuntimeConfigGet.request
+            }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.RuntimeConfigGet.response[200]
+            }
+          }
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.RuntimeConfigGet.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginConfigGetUC = makePluginConfigGetUC(usecaseDeps);
+      const body = c.req.valid('json');
+      const [result, err] = await pluginConfigGetUC({
+        pluginId: body.pluginId
+      });
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.success(c, result);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.RuntimeConfigSet.meta,
+      request: {
+        body: {
+          content: {
+            'application/json': {
+              schema: PluginContract.RuntimeConfigSet.request
+            }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response'
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.RuntimeConfigSet.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginConfigSetUC = makeSetPluginConfigUC(usecaseDeps);
+      const body = c.req.valid('json');
+      const [, err] = await pluginConfigSetUC({
+        pluginId: body.pluginId,
+        config: body.config
+      });
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.empty(c);
+    }
+  );
+
+  route.openapi(
+    createRoute({
+      ...PluginContract.RuntimeConfigReset.meta,
+      request: {
+        body: {
+          content: {
+            'application/json': {
+              schema: PluginContract.RuntimeConfigReset.request
+            }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: 'HTTP 200 response'
+        },
+        500: {
+          description: 'HTTP 500 response',
+          content: {
+            'application/json': {
+              schema: PluginContract.RuntimeConfigReset.response[500]
+            }
+          }
+        }
+      }
+    }),
+    async (c) => {
+      const pluginConfigResetUC = makeResetPluginConfigUC(usecaseDeps);
+      const body = c.req.valid('json');
+      const [, err] = await pluginConfigResetUC({
+        pluginId: body.pluginId
+      });
+
+      if (err) {
+        return R.fail(c, 500, err.error);
+      }
+
+      return R.empty(c);
+    }
+  );
+
+  return route;
+};

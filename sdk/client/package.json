@@ -1,0 +1,38 @@
+{
+  "name": "@fastgpt-plugin/sdk-client",
+  "version": "0.1.0-alpha.2",
+  "description": "TypeScript client SDK for calling the FastGPT Plugin service APIs.",
+  "keywords": [
+    "fastgpt",
+    "fastgpt-plugin",
+    "sdk",
+    "client",
+    "typescript"
+  ],
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsdown"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "tsdown": "catalog:"
+  },
+  "peerDependencies": {
+    "zod": "^4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": false
+}
